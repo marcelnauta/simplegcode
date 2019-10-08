@@ -91,6 +91,7 @@ class RampSpeeds(object):
                  # or Jog speed during ramping. This parameter thus sets the
                  # acceleration rate and deceleration rate.
                  move_ramp_rate = 0.2,
+                 jog_ramp_rate = 0.2,
                  # This value adjusts the sensitivity of 3D ramping. Decreasing makes
                  # 3D ramping more sensitive, increasing makes it less sensitive.
                  threshold_3d = 100.0,
@@ -121,6 +122,7 @@ class RampSpeeds(object):
         self.b_jog_ramp_speed = b_jog_ramp_speed
 
         self.move_ramp_rate = move_ramp_rate
+        self.jog_ramp_rate = jog_ramp_rate
         self.threshold_3d = threshold_3d
         self.minimum_distance = minimum_distance
         self.slow_corner_speed = slow_corner_speed
@@ -137,6 +139,7 @@ class RampSpeeds(object):
             a_jog_ramp_speed = None,
             b_jog_ramp_speed = None,
             move_ramp_rate = None,
+            jog_ramp_rate = None,
             threshold_3d = None,
             minimum_distance = None,
             slow_corner_speed = None,
@@ -163,6 +166,8 @@ class RampSpeeds(object):
 
         if move_ramp_rate is not None:
             self.move_ramp_rate = move_ramp_rate
+        if jog_ramp_rate is not None:
+            self.jog_ramp_rate = jog_ramp_rate
         if threshold_3d is not None:
             self.threshold_3d = threshold_3d
         if minimum_distance is not None:
@@ -186,11 +191,12 @@ class RampSpeeds(object):
                   self.b_jog_ramp_speed,
 
                   self.move_ramp_rate,
+                  self.jog_ramp_rate,
                   self.threshold_3d,
                   self.minimum_distance,
                   self.slow_corner_speed,
                   # Manual is inconsistent with these parameters
-                  #self.keypad_ramp_rate,
-                  #self.small_circle_diameter,
+                  self.keypad_ramp_rate,
+                  self.small_circle_diameter,
                   ]
         return ','. join(['VR'] + ['{0:.2f}'.format(v) for v in values]) + '\n'

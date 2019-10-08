@@ -8,7 +8,7 @@ from helpers import divide_into_equal_passes, center_equally_spaced_points_in_ra
 from helpers import divide_with_clearout_depths
 import templates
 import workpiece
-    
+
 class ShopBotFile(object):
     def __init__(self, filename = 'tmp.sbp', xy_speed = 1.5, z_speed = 1.5, a_speed = 360.0, b_speed = 360.0):
         self.outfile = open(filename, 'w')
@@ -16,7 +16,8 @@ class ShopBotFile(object):
         self.movement_speeds = c.MovementSpeeds()
         self.ramp_speeds = c.RampSpeeds()
         self.set_speed()
-        self.set_ramps()
+        self.set_ramps(small_circle_diameter = 0.2,
+                       xy_move_ramp_speed = 0.8)
 
     def _write(self, out_str):
         self.outfile.write(out_str)
@@ -55,7 +56,7 @@ class RouterBit(object):
         self.diameter = diameter
         self.radius = diameter / 2.0
         self.pass_depth = 3/16.0
-        self.clearout_depth = 0.51
+        self.clearout_depth = 2.01
         self.pass_horiz = 0.3 * diameter
 
     def get_radius(height_wrt_bottom):
@@ -147,7 +148,7 @@ class HolePath(ToolPathABC):
 
         # Without ever clearing sawdust out, the hole would be cut in the following passes
         depths = divide_with_clearout_depths(self.depth, self.bit.pass_depth, self.bit.clearout_depth)
-                
+
         if max_radius == 0.0:
             for depth in depths:
                 points.append([0,0,0])
@@ -212,14 +213,14 @@ class HolePath(ToolPathABC):
 
         points.append([0,0,c.SAFE_HEIGHT])
         return points
-        
+
 class MultipleHolesPath(ToolPathABC):
     def __init__(self, hole_path, xy_locations = []):
         ToolPathABC.__init__(self)
         self.hole_path = hole_path
         for xy_location in xy_locations:
             self.add_location(xy_location[0], xy_location[1])
-            
+
     def add_location(self, offset_x = 0.0, offset_y = 0.0):
         new_hole_path = copy.deepcopy(self.hole_path)
         new_hole_path.add_transform(Shift2D(offset_x, offset_y))
@@ -303,26 +304,26 @@ if __name__ == '__main__':
     move_to_path = MoveToPath([12.0, 2.0, 0.0, math.pi])
     shift_2d = Shift2D(1.0, 1.0)
     move_to_path.add_transform(shift_2d)
-    
-    hole_path = HolePath(bit = endmill_bit, diameter = 0.75, depth = 2,
+
+    hole_path = HolePath(bit = endmill_bit, diameter = 0.75, depth = 1.55,
                          direction = c.DIRECTION_CONVENTIONAL)
-                         
-    
+
+
     multiple_holes_path = MultipleHolesPath(hole_path)
-    x_offsets = [0.0] #center_equally_spaced_points_in_range(0, 72, 6, 5.0)
+    x_offsets = center_equally_spaced_points_in_range(0, 42, 2.5, 2.0)
     y_offsets = [0.0] #center_equally_spaced_points_in_range(0, 42, 2.5, 1.0)
     for x_idx, offset_x in enumerate(x_offsets):
         direction = 1 if x_idx % 2 == 0 else -1
         for offset_y in y_offsets[::direction]: #y_offsets[::direction]:
             multiple_holes_path.add_location(offset_x = offset_x, offset_y = offset_y)
-    
+
     shop_bot_file = ShopBotFile('custom_size_hole.sbp')
-    
+
     shop_bot_file.add_points(multiple_holes_path.get_points())
     shop_bot_file.close()
-    
+
     points = np.array(multiple_holes_path.get_points())
-    
+
     workpiece_preview = workpiece.WorkpiecePreview([2, 2, 2], origin=[-1, -1, 0])
     workpiece_preview.plot_three_axis(points)
 

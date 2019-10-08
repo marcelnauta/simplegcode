@@ -10,11 +10,11 @@ class WorkpiecePreview(object):
     def __init__(self, size, origin = [0,0,0]):
         self.size = size
         self.origin = origin
-        
+
     def plot_three_axis(self, points):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        
+
         # Draw lines individually to vary color
         num_points = np.size(points, 0)
         colors = pl.cm.gist_earth(np.linspace(0,0.9,num_points))
@@ -25,12 +25,12 @@ class WorkpiecePreview(object):
         ax.set_ylabel('Y Axis')
         ax.set_zlabel('Z Axis')
         plt.show()
-    
+
     def _draw_bounding_box(self, axes):
         for axis_1, axis_2, axis_3 in [[c.AXIS_X, c.AXIS_Y, c.AXIS_Z],
                                        [c.AXIS_Y, c.AXIS_Z, c.AXIS_X],
                                        [c.AXIS_Z, c.AXIS_X, c.AXIS_Y]]:
-            for is_max_2 in [0, 1]:                            
+            for is_max_2 in [0, 1]:
                 for is_max_3 in [0, 1]:
                     line = [np.array([o,o]) for o in self.origin]
                     line[axis_1][1] += self.size[axis_1]
@@ -38,5 +38,4 @@ class WorkpiecePreview(object):
                         line[axis_2][i] += is_max_2 * self.size[axis_2]
                         line[axis_3][i] += is_max_3 * self.size[axis_3]
                     axes.plot3D(line[c.AXIS_X], line[c.AXIS_Y], -line[c.AXIS_Z], color="b")
-        
-        
+

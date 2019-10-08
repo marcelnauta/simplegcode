@@ -8,7 +8,7 @@ def divide_into_equal_passes(begin, end, max_increment, include_first = True):
     passes[-1] = end # Remove rounding errors
     first_idx = 0 if include_first else 1
     return passes[first_idx:]
-    
+
 def center_equally_spaced_points_in_range(begin, end, increment, min_edge_size = 0.0):
     min_val = min(begin, end)
     max_val = max(begin, end)
@@ -20,7 +20,7 @@ def center_equally_spaced_points_in_range(begin, end, increment, min_edge_size =
     edges = [min_val + actual_edge_size + i * increment for i in range(num_steps+1)]
     direction = -1 if begin > end else 1
     return edges[::direction]
-    
+
 def divide_with_clearout_depths(max_depth, depth_increment, clearout_depth):
     # First, divide depth evenly
     basic_depths = divide_into_equal_passes(0.0, max_depth, depth_increment, include_first = False)
