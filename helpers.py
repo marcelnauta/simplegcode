@@ -33,5 +33,4 @@ def divide_with_clearout_depths(max_depth, depth_increment, clearout_depth):
             cleared_depth += clearout_depth
             depths.append(0.5*depth)
             depths.append(depth)
-    print(depths)
     return depths
