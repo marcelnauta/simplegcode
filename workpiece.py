@@ -11,6 +11,12 @@ class WorkpiecePreview(object):
         self.size = size
         self.origin = origin
 
+    def estimate_time(self, points, speed):
+        distance = np.sum(np.sqrt((points[:-1,c.AXIS_X] - points[1:,c.AXIS_X])**2
+                                 + (points[:-1,c.AXIS_Y] - points[1:,c.AXIS_Y])**2
+                                 + (points[:-1,c.AXIS_Z] - points[1:,c.AXIS_Z])**2))
+        return distance / speed
+
     def plot_three_axis(self, points):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -38,4 +44,32 @@ class WorkpiecePreview(object):
                         line[axis_2][i] += is_max_2 * self.size[axis_2]
                         line[axis_3][i] += is_max_3 * self.size[axis_3]
                     axes.plot3D(line[c.AXIS_X], line[c.AXIS_Y], -line[c.AXIS_Z], color="b")
+
+    def plot_birds_eye(self, points):
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        # Draw lines individually to vary color
+        num_points = np.size(points, 0)
+        max_depth = np.max(points[:,c.AXIS_Z])
+
+        if 0: # color code depth (too slow)
+            colors = pl.cm.gist_earth(0.9 * points[:,c.AXIS_Z] / max_depth)
+            for n in range(1, num_points):
+                ax.plot(points[n-1:n+1,c.AXIS_X], points[n-1:n+1,c.AXIS_Y], '-', color=colors[n])
+        else:
+            ax.plot(points[:,c.AXIS_X], points[:,c.AXIS_Y], '-')
+        self._draw_bounding_box_2d(ax)
+        ax.set_xlabel('X Axis')
+        ax.set_ylabel('Y Axis')
+        plt.show()
+
+    def _draw_bounding_box_2d(self, axes):
+        min_x = self.origin[c.AXIS_X]
+        min_y = self.origin[c.AXIS_Y]
+        max_x = self.origin[c.AXIS_X] + self.size[c.AXIS_X]
+        max_y = self.origin[c.AXIS_Y] + self.size[c.AXIS_Y]
+        axes.plot([min_x, max_x, max_x, min_x, min_x],
+                  [min_y, min_y, max_y, max_y, min_y],
+                  color="b")
 

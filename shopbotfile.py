@@ -18,8 +18,7 @@ class ShopBotFile(object):
         self.movement_speeds = c.MovementSpeeds()
         self.ramp_speeds = c.RampSpeeds()
         self.set_speed()
-        self.set_ramps(small_circle_diameter = 0.2,
-                       xy_move_ramp_speed = 0.8)
+        self.set_ramps()
 
     def _write(self, out_str):
         self.outfile.write(out_str)
@@ -76,6 +75,7 @@ if __name__ == '__main__':
             multiple_holes_path.add_location(offset_x = offset_x, offset_y = offset_y)
 
     shop_bot_file = ShopBotFile('custom_size_hole.sbp')
+    shop_bot_file.set_ramps(small_circle_diameter = 0.2, xy_move_ramp_speed = 0.8)
 
     shop_bot_file.add_points(multiple_holes_path.get_points())
     shop_bot_file.close()
