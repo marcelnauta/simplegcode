@@ -97,6 +97,7 @@ if __name__ == '__main__':
     shop_bot_file.set_ramps(small_circle_diameter = 0.2,
                             xy_move_ramp_speed = args.ramp_speed,
                             xy_jog_ramp_speed = args.ramp_speed)
+    shop_bot_file.set_speed(xy_move_speed = 3.0)
 
     shop_bot_file.add_points(multiple_holes_path.get_points())
     shop_bot_file.close()
