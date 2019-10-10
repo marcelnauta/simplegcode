@@ -147,12 +147,14 @@ class HolePath(ToolPathABC):
             #        points.append([radius * math.sin(theta), radius * math.cos(theta), -depth])
 
         # Spiral back into the center from the last used depth. Increase height very non-linearly
+        # Only raise slightly above the bottom so that we can move at jog speed up out of the hole.
         last_known_radius = points[-1][1]
         for theta in full_circle_angles:
             depth_scalar = math.pow(math.cos(0.25 * theta), 0.25)
+            withdraw_depth = max(depth - self.bit.pass_depth, 0.0)
             radial_scalar = 1.0 - (theta / (2*math.pi))**2
             this_radius = radial_scalar * last_known_radius
-            points.append([this_radius * math.sin(theta), this_radius * math.cos(theta), -depth_scalar*depth])
+            points.append([this_radius * math.sin(theta), this_radius * math.cos(theta), -(depth_scalar*depth + (1-depth_scalar)*withdraw_depth)])
 
         points.append([0,0,c.SAFE_HEIGHT])
         return points

@@ -47,7 +47,7 @@ class WorkpiecePreview(object):
 
     def plot_birds_eye(self, points):
         fig = plt.figure()
-        ax = fig.add_subplot(111)
+        ax = fig.add_subplot(111, aspect='equal')
 
         # Draw lines individually to vary color
         num_points = np.size(points, 0)

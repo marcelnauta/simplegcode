@@ -31,11 +31,16 @@ if __name__ == '__main__':
                         help='Distance between the holes being drilled.')
 
     parser.add_argument('--ramp-speed', default=0.8, type=float,
-                        help='Distance between the holes being drilled.')
+                        help='Speed during corners in inches/second. Applies to tight radius helix only.')
+
+    parser.add_argument('--move-speed', default=4.0, type=float,
+                        help='Movement speed in inches/sec. Careful! A helical plunge will move at ramp-speed, but large radii with move at this speed.')
 
     args = parser.parse_args()
 
-    endmill_bit = RouterBit(args.bit_diameter, clearout_depth_inches = args.bit_clearout_depth)
+    endmill_bit = RouterBit(args.bit_diameter,
+                            clearout_depth_inches = args.bit_clearout_depth,
+                            pass_depth_inches = 0.25)
 
     hole_path = toolpaths.HolePath(bit = endmill_bit,
                                    diameter = args.hole_diameter,
@@ -50,42 +55,86 @@ if __name__ == '__main__':
     # center, and the offsets are symmetric about that.
     x_offsets_and_num_points = []
 
-    # Two tracks on board 0
-    board_0 = 4.75 + 1/16.0
-    x_sum = 0.5 * board_0
-    x_offsets_and_num_points.append( ( x_sum, num_long ) )
-    x_sum += 0.5 * board_0
 
-    # One track on board 1
-    board_1 = (6 + 1/16.0)
-    x_sum += 0.5*board_1
-    x_offsets_and_num_points.append( ( x_sum, num_short ) )
-    x_sum += 0.5*board_1
+    if 0: # First set of holes
+        y_start = 1.5 + args.hole_diameter/2.0
 
-    # One track on board 2
-    board_2 = (6 + 7/8.0)
-    x_sum += 0.5*board_2
-    x_offsets_and_num_points.append( ( x_sum, num_long ) )
-    x_sum += 0.5*board_2
+        # Two tracks on board 0
+        board_0 = 4.75 + 1/16.0
+        x_sum = 0.5 * board_0
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.5 * board_0
 
-    # One track on board 3
-    board_3 = (8.5 - 1/16.0)
-    x_sum += 0.5 * board_3
-    x_offsets_and_num_points.append( ( x_sum, num_short ) )
-    x_sum += 0.5 * board_3
+        # One track on board 1
+        board_1 = (6 + 1/16.0)
+        x_sum += 0.5*board_1
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.5*board_1
 
-    # One track on board 2
-    board_4 = (8.5)
-    x_sum += 0.5*board_4
-    x_offsets_and_num_points.append( ( x_sum, num_long ) )
-    x_sum += 0.5*board_4
+        # One track on board 2
+        board_2 = (6 + 7/8.0)
+        x_sum += 0.5*board_2
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.5*board_2
+
+        # One track on board 3
+        board_3 = (8.5 - 1/16.0)
+        x_sum += 0.5 * board_3
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.5 * board_3
+
+        # One track on board 4
+        board_4 = (8.5)
+        x_sum += 0.5*board_4
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.5*board_4
+    if 1: # second set of holes
+        y_start = 0.5 + args.hole_diameter/2.0
+
+        # One tracks down the middle of board 0
+        board_0 = 4.75 + 1/16.0
+        x_sum = 0.0
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += board_0
+
+        # Two tracks on board 1
+        board_1 = (6 + 1/16.0)
+        x_sum += 0.25*board_1
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.5*board_1
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.25*board_1
+
+        # Two tracks on board 2
+        board_2 = (6 + 7/8.0)
+        x_sum += 0.25*board_2
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.5*board_2
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.25*board_2
+
+        # Two tracks on board 3
+        board_3 = (8.5 - 1/16.0)
+        x_sum += 0.25 * board_3
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.5 * board_3
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_short ) )
+        x_sum += 0.25 * board_3
+
+        # Two tracks on board 4
+        board_4 = (8.5)
+        x_sum += 0.25*board_4
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.5*board_4
+        x_offsets_and_num_points.append( ( x_sum, y_start, num_long ) )
+        x_sum += 0.25*board_4
+
     print(x_sum)
 
-    mirror_x_offsets = [(-x, num) for (x, num) in x_offsets_and_num_points[::-1]]
-    y_start = 1.5 + args.hole_diameter/2.0
+    mirror_x_offsets = [(-x, y, num) for (x, y, num) in x_offsets_and_num_points[::-1] if x != 0.0]
     x_idx = 0
     num_holes = 0
-    for offset_x, num_y in (mirror_x_offsets + x_offsets_and_num_points):
+    for offset_x, y_start, num_y in (mirror_x_offsets + x_offsets_and_num_points):
         direction = 1 if x_idx % 2 == 0 else -1
         y_offsets = [y_start + i*args.hole_spacing for i in range(num_y)]
         x_idx += 1
@@ -95,8 +144,14 @@ if __name__ == '__main__':
 
     shop_bot_file = ShopBotFile('workbench_holes.sbp')
     shop_bot_file.set_ramps(small_circle_diameter = 0.2,
+                            z_move_ramp_speed = args.ramp_speed,
+                            z_jog_ramp_speed = args.ramp_speed,
                             xy_move_ramp_speed = args.ramp_speed,
                             xy_jog_ramp_speed = args.ramp_speed)
+    shop_bot_file.set_speed(z_move_speed = args.move_speed,
+                            z_jog_speed = args.move_speed,
+                            xy_move_speed = args.move_speed,
+                            xy_jog_speed = args.move_speed)
 
     shop_bot_file.add_points(multiple_holes_path.get_points())
     shop_bot_file.close()
