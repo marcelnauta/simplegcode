@@ -21,10 +21,10 @@ if __name__ == '__main__':
     parser.add_argument('--bit-clearout-depth', default=2.0+1/32.0, type=float,
                         help='Maximum depth before a clearout operation is performed.')
 
-    parser.add_argument('--hole-diameter', default=0.75, type=float,
+    parser.add_argument('--hole-diameter', default=1.0, type=float,
                         help='Diameter of the holes being drilled.')
 
-    parser.add_argument('--hole-depth', default=2.0, type=float,
+    parser.add_argument('--hole-depth', default=0.25, type=float,
                         help='Depth of the holes being drilled.')
 
     parser.add_argument('--x-spacing', default=2.5, type=float,
@@ -81,4 +81,5 @@ if __name__ == '__main__':
         origin_y = -0.5 * width_y
     workpiece_preview = workpiece.WorkpiecePreview([width_x, width_y, args.hole_depth],
                                                    origin=[origin_x, origin_y, 0])
+    workpiece_preview.plot_birds_eye(points)
     workpiece_preview.plot_three_axis(points)

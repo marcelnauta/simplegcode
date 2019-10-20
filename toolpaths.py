@@ -22,6 +22,17 @@ class Shift2D(PathTransformABC):
         point[c.AXIS_Y] = point[c.AXIS_Y] + self.offset_y
         return point
 
+class Rotate2D(PathTransformABC):
+    def __init__(self, angle_ccw, degrees = True):
+        scalar = math.pi / 180.0 if degrees else 1.0
+        self.angle_ccw = angle_ccw * scalar
+
+    def apply_transform(self, point):
+        rv = copy.deepcopy(point)
+        rv[c.AXIS_X] = math.cos(self.angle_ccw) * point[c.AXIS_X] - math.sin(self.angle_ccw) * point[c.AXIS_Y]
+        rv[c.AXIS_Y] = math.sin(self.angle_ccw) * point[c.AXIS_X] + math.cos(self.angle_ccw) * point[c.AXIS_Y]
+        return rv
+
 class Mirror(PathTransformABC):
     def __init__(self, axis):
         self.axis = axis
@@ -73,7 +84,7 @@ class HolePath(ToolPathABC):
     def get_untransformed_points(self):
         max_radius = max(0.0, self.diameter / 2.0 - self.bit.radius)
         min_radius = min(max_radius, 0.8 * self.bit.radius)
-        num_rings = max(1, math.ceil((max_radius - min_radius) / self.bit.pass_horiz))
+        num_rings = max(1, math.ceil((max_radius - min_radius) / self.bit.pass_horiz) + 1)
 
         full_circle_angles = np.linspace(0, 2*math.pi, 65, endpoint=True)
 
@@ -170,6 +181,45 @@ class MultipleHolesPath(ToolPathABC):
         new_hole_path = copy.deepcopy(self.hole_path)
         new_hole_path.add_transform(Shift2D(offset_x, offset_y))
         self.paths.append(new_hole_path)
+
+
+class DatoPath(ToolPathABC):
+    def __init__(self, bit, dato_width, board_width, depth,
+                 direction = c.DIRECTION_CONVENTIONAL,
+                 offset_x = 0.0, offset_y = 0.0):
+        ToolPathABC.__init__(self)
+        self.bit = bit
+        self.diameter = dato_width
+        self.dato_width = dato_width
+        self.board_width = board_width
+        self.depth = depth
+        if direction == c.DIRECTION_CLIMB:
+            self.add_transform(Mirror(c.AXIS_Y))
+        if offset_x != 0.0 or offset_y != 0.0:
+            self.add_transform(Shift2D(offset_x, offset_y))
+
+    def get_untransformed_points(self):
+        # Untransformed dato assumes the board is lying in the y direction with the cut in the x direction
+        # The origin is the center of the dato in the center of the board.
+        min_x = -self.board_width / 2.0 - self.bit.radius # outside workpiece
+        max_x = -min_x
+        min_y = -self.dato_width / 2.0 + self.bit.radius # inside slot size
+        max_y = -min_y
+        points = [[min_x, min_y, c.SAFE_HEIGHT]]
+        import random
+
+        depths = divide_with_clearout_depths(self.depth, self.bit.pass_depth, self.bit.clearout_depth)
+        for depth in [1.0]:#depths:
+            for y in divide_into_equal_passes(max_y, self.bit.pass_horiz/2.0, self.bit.pass_horiz):
+                x_off = 0.0 # random.random()*0.1
+                points.append([min_x - x_off, -y, -depth])
+                points.append([min_x - x_off,  y, -depth])
+                points.append([max_x + x_off,  y, -depth])
+                points.append([max_x + x_off, -y, -depth])
+                points.append([min_x - x_off, -y, -depth])
+
+        points.append([points[-1][0] ,points[-1][1], c.SAFE_HEIGHT])
+        return points
 
 
 def make_dovetail_domino(width = 5/8.0, half_height = 7/16.0, length = 8.0,

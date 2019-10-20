@@ -17,7 +17,7 @@ class WorkpiecePreview(object):
                                  + (points[:-1,c.AXIS_Z] - points[1:,c.AXIS_Z])**2))
         return distance / speed
 
-    def plot_three_axis(self, points):
+    def plot_three_axis(self, points, draw_bounding_box = True):
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
@@ -26,7 +26,8 @@ class WorkpiecePreview(object):
         colors = pl.cm.gist_earth(np.linspace(0,0.9,num_points))
         for n in range(1, num_points):
             ax.plot(points[n-1:n+1,c.AXIS_X], points[n-1:n+1,c.AXIS_Y], points[n-1:n+1,c.AXIS_Z], '-', color=colors[n])
-        self._draw_bounding_box(ax)
+        if draw_bounding_box:
+            self._draw_bounding_box(ax)
         ax.set_xlabel('X Axis')
         ax.set_ylabel('Y Axis')
         ax.set_zlabel('Z Axis')
@@ -45,20 +46,23 @@ class WorkpiecePreview(object):
                         line[axis_3][i] += is_max_3 * self.size[axis_3]
                     axes.plot3D(line[c.AXIS_X], line[c.AXIS_Y], -line[c.AXIS_Z], color="b")
 
-    def plot_birds_eye(self, points):
+    def plot_birds_eye(self, points, extras = []):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
+
+        points_list = [points] + extras
 
         # Draw lines individually to vary color
         num_points = np.size(points, 0)
         max_depth = np.max(points[:,c.AXIS_Z])
 
-        if 0: # color code depth (too slow)
-            colors = pl.cm.gist_earth(0.9 * points[:,c.AXIS_Z] / max_depth)
-            for n in range(1, num_points):
-                ax.plot(points[n-1:n+1,c.AXIS_X], points[n-1:n+1,c.AXIS_Y], '-', color=colors[n])
-        else:
-            ax.plot(points[:,c.AXIS_X], points[:,c.AXIS_Y], '-')
+        for points in points_list:
+            if 0: # color code depth (too slow)
+                colors = pl.cm.gist_earth(0.9 * points[:,c.AXIS_Z] / max_depth)
+                for n in range(1, num_points):
+                    ax.plot(points[n-1:n+1,c.AXIS_X], points[n-1:n+1,c.AXIS_Y], '-', color=colors[n])
+            else:
+                ax.plot(points[:,c.AXIS_X], points[:,c.AXIS_Y], '-')
         self._draw_bounding_box_2d(ax)
         ax.set_xlabel('X Axis')
         ax.set_ylabel('Y Axis')
