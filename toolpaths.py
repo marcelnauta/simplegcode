@@ -206,17 +206,17 @@ class DatoPath(ToolPathABC):
         min_y = -self.dato_width / 2.0 + self.bit.radius # inside slot size
         max_y = -min_y
         points = [[min_x, min_y, c.SAFE_HEIGHT]]
-        import random
 
         depths = divide_with_clearout_depths(self.depth, self.bit.pass_depth, self.bit.clearout_depth)
-        for depth in [1.0]:#depths:
-            for y in divide_into_equal_passes(max_y, self.bit.pass_horiz/2.0, self.bit.pass_horiz):
-                x_off = 0.0 # random.random()*0.1
+        for depth in depths:
+            x_off = 0.0
+            for y in divide_into_equal_passes(max_y, self.bit.pass_horiz/2.0, self.bit.pass_horiz)[::-1]:
                 points.append([min_x - x_off, -y, -depth])
                 points.append([min_x - x_off,  y, -depth])
                 points.append([max_x + x_off,  y, -depth])
                 points.append([max_x + x_off, -y, -depth])
                 points.append([min_x - x_off, -y, -depth])
+                #x_off -= self.bit.pass_horiz
 
         points.append([points[-1][0] ,points[-1][1], c.SAFE_HEIGHT])
         return points
