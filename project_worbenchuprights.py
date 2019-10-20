@@ -81,7 +81,7 @@ if __name__ == '__main__':
                         help='Set the pivot location in x as a fraction of the width of the upright')
     parser.add_argument('--pivot-fraction-of-table', default=0.55, type=float,
                         help='Set the pivot location in x as a fraction of the width of the table')
-    parser.add_argument('--pivot-to-table-distance', default=3.0, type=float,
+    parser.add_argument('--pivot-to-table-distance', default=3.5, type=float,
                         help='Distance between the center of the pivot and the bottom of the table (min of sqrt(2)/2 * flange_width)')
     parser.add_argument('--pivot-max-angle', default=78.0, type=float,
                         help='Maximum angle of the pivot in degrees')
@@ -106,6 +106,12 @@ if __name__ == '__main__':
                         help='Width of the thinner horizontal board')
     parser.add_argument('--brace-board-thickness', default=7.0/8.0 + 1.0/32.0, type=float,
                         help='Thickness of the thinner horizontal board')
+
+    parser.add_argument('--lap-ramp-speed', default=0.4, type=float,
+                        help='Movement speed in inches/sec along tight curves within lap joint')
+
+    parser.add_argument('--lap-move-speed', default=3.5, type=float,
+                        help='Movement speed in inches/sec along straight paths of lap joint.')
 
     parser.add_argument('--ramp-speed', default=0.8, type=float,
                         help='Speed during corners in inches/second. Applies to tight radius helix only.')
@@ -169,7 +175,7 @@ if __name__ == '__main__':
 
     ## SETUP CUTTING PROFILES
 
-    endmill_bit = RouterBit(args.bit_diameter, clearout_depth_inches = args.bit_clearout_depth)
+    endmill_bit = RouterBit(args.bit_diameter, clearout_depth_inches = args.bit_clearout_depth, pass_depth_inches = 0.25)
     # Step 1) Cut out an angled lap joint between the angled board and the horizontal brace
     # Step 2) Manually glue the lap joint together
     # Step 3) Cut out the hole for the axle and trim the angles of the board
@@ -206,14 +212,14 @@ if __name__ == '__main__':
 
         lap_shop_bot_file = ShopBotFile(upright_name + '_angled_upright_lap_joints.sbp')
         lap_shop_bot_file.set_ramps(small_circle_diameter = 0.2,
-                                    z_move_ramp_speed = args.ramp_speed,
-                                    z_jog_ramp_speed = args.ramp_speed,
-                                    xy_move_ramp_speed = args.ramp_speed,
-                                    xy_jog_ramp_speed = args.ramp_speed)
-        lap_shop_bot_file.set_speed(z_move_speed = args.move_speed,
-                                    z_jog_speed = args.move_speed,
-                                    xy_move_speed = args.move_speed,
-                                    xy_jog_speed = args.move_speed)
+                                    z_move_ramp_speed = args.lap_ramp_speed,
+                                    z_jog_ramp_speed = args.lap_ramp_speed,
+                                    xy_move_ramp_speed = args.lap_ramp_speed,
+                                    xy_jog_ramp_speed = args.lap_ramp_speed)
+        lap_shop_bot_file.set_speed(z_move_speed = args.lap_move_speed,
+                                    z_jog_speed = args.lap_move_speed,
+                                    xy_move_speed = args.lap_move_speed,
+                                    xy_jog_speed = args.lap_move_speed)
 
         hole_shop_bot_file = ShopBotFile(upright_name + '_angled_upright_hole.sbp')
         hole_shop_bot_file.set_ramps(small_circle_diameter = 0.2,
@@ -226,8 +232,8 @@ if __name__ == '__main__':
                                      xy_move_speed = args.move_speed,
                                     xy_jog_speed = args.move_speed)
 
-        lap_shop_bot_file.add_points(upper_lap_path.get_points())
         lap_shop_bot_file.add_points(lower_lap_path.get_points())
+        lap_shop_bot_file.add_points(upper_lap_path.get_points())
         hole_shop_bot_file.add_points(axle_hole_path.get_points())
         lap_shop_bot_file.close()
         hole_shop_bot_file.close()
