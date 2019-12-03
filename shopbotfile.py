@@ -22,7 +22,7 @@ class ShopBotFile(object):
 
     def _write(self, out_str):
         self.outfile.write(out_str)
-        #print(out_str)
+        print(out_str)
 
     def close(self):
         self._write(templates.get_footer())
@@ -38,7 +38,7 @@ class ShopBotFile(object):
 
     def move_to(self, point, command_prefix = 'M'):
         if len(point) == 4: # At Maker Labs, the CNC is 4 axis, but the 4th axis acts as the 5th
-            point = (point[0], point[1], point[2], 0.0, point[4])
+            point = (point[0], point[1], point[2], 0.0, point[3])
         point_as_str = ['{0:.6f}'.format(x) for x in point]
         command_tag = command_prefix + '{0:d}'.format(len(point))
         self._write(','.join([command_tag] + point_as_str) + '\n')
