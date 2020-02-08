@@ -21,15 +21,15 @@ if __name__ == '__main__':
     parser.add_argument('--bit-clearout-depth', default=2.0+1/32.0, type=float,
                         help='Maximum depth before a clearout operation is performed.')
 
-    parser.add_argument('--hole-diameter', default=1.0, type=float,
+    parser.add_argument('--hole-diameter', default=0.75, type=float,
                         help='Diameter of the holes being drilled.')
 
-    parser.add_argument('--hole-depth', default=0.25, type=float,
+    parser.add_argument('--hole-depth', default=1.75, type=float,
                         help='Depth of the holes being drilled.')
 
     parser.add_argument('--x-spacing', default=2.5, type=float,
                         help='Distance between holes in the x-direction')
-    parser.add_argument('--x-length', default=0.0, type=float,
+    parser.add_argument('--x-length', default=32.0, type=float,
                         help='Total length of the workpiece in the x-direction.')
     parser.add_argument('--x-min-edge', default=0.0, type=float,
                         help='Minimum distance of the holes from the edge of the workpiece in the x-direction.')
@@ -40,6 +40,12 @@ if __name__ == '__main__':
                         help='Total length of the workpiece in the y-direction.')
     parser.add_argument('--y-min-edge', default=0.0, type=float,
                         help='Minimum distance of the holes from the edge of the workpiece in the y-direction.')
+
+    parser.add_argument('--ramp-speed', default=0.8, type=float,
+                        help='Speed during corners in inches/second. Applies to tight radius helix only.')
+
+    parser.add_argument('--move-speed', default=4.0, type=float,
+                        help='Movement speed in inches/sec. Careful! A helical plunge will move at ramp-speed, but large radii with move at this speed.')
 
     args = parser.parse_args()
 
@@ -61,7 +67,15 @@ if __name__ == '__main__':
             multiple_holes_path.add_location(offset_x = offset_x, offset_y = offset_y)
 
     shop_bot_file = ShopBotFile('custom_size_hole.sbp')
-    shop_bot_file.set_ramps(small_circle_diameter = 0.2, xy_move_ramp_speed = 0.8)
+    shop_bot_file.set_ramps(small_circle_diameter = 0.2,
+                            z_move_ramp_speed = args.ramp_speed,
+                            z_jog_ramp_speed = args.ramp_speed,
+                            xy_move_ramp_speed = args.ramp_speed,
+                            xy_jog_ramp_speed = args.ramp_speed)
+    shop_bot_file.set_speed(z_move_speed = args.move_speed,
+                            z_jog_speed = args.move_speed,
+                            xy_move_speed = args.move_speed,
+                            xy_jog_speed = args.move_speed)
 
     shop_bot_file.add_points(multiple_holes_path.get_points())
     shop_bot_file.close()

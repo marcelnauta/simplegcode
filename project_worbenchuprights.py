@@ -186,13 +186,18 @@ if __name__ == '__main__':
         rotation = (args.pivot_max_angle - 90) if upright_name == 'left' else (90 - args.pivot_max_angle)
 
         upper_lap_path = toolpaths.DatoPath(bit = endmill_bit,
-                                            dato_width = args.brace_board_width,
-                                            board_width = args.angled_board_width * dato_multiplier,
-                                            depth = args.brace_board_thickness,
+                                            dato_width = 28,
+                                            board_width =63,
+                                            depth = 0.01,
                                             direction = c.DIRECTION_CONVENTIONAL)
-        upper_lap_path.add_transform(toolpaths.Rotate2D(rotation))
-        upper_lap_height_wrt_cart = args.table_height - args.table_thickness - args.brace_board_width / 2.0 - args.cart_height_at_bottom + board_cutoff
-        upper_lap_path.add_transform(toolpaths.Shift2D( args.angled_board_width/2.0 , upper_lap_height_wrt_cart * angle_length_multiplier))
+        #upper_lap_path = toolpaths.DatoPath(bit = endmill_bit,
+           #                                 dato_width = args.brace_board_width,
+          #                                  board_width = args.angled_board_width * dato_multiplier,
+         #                                   depth = args.brace_board_thickness,
+        #                                    direction = c.DIRECTION_CONVENTIONAL)
+        #upper_lap_path.add_transform(toolpaths.Rotate2D(rotation))
+        #upper_lap_height_wrt_cart = args.table_height - args.table_thickness - args.brace_board_width / 2.0 - args.cart_height_at_bottom + board_cutoff
+        #upper_lap_path.add_transform(toolpaths.Shift2D( args.angled_board_width/2.0 , upper_lap_height_wrt_cart * angle_length_multiplier))
 
         lower_lap_path = toolpaths.DatoPath(bit = endmill_bit,
                                             dato_width = args.cart_thickness,
@@ -232,7 +237,7 @@ if __name__ == '__main__':
                                      xy_move_speed = args.move_speed,
                                     xy_jog_speed = args.move_speed)
 
-        lap_shop_bot_file.add_points(lower_lap_path.get_points())
+        #lap_shop_bot_file.add_points(lower_lap_path.get_points())
         lap_shop_bot_file.add_points(upper_lap_path.get_points())
         hole_shop_bot_file.add_points(axle_hole_path.get_points())
         lap_shop_bot_file.close()

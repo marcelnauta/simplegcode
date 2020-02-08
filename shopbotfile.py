@@ -22,7 +22,7 @@ class ShopBotFile(object):
 
     def _write(self, out_str):
         self.outfile.write(out_str)
-        print(out_str)
+        #print(out_str)
 
     def close(self):
         self._write(templates.get_footer())
