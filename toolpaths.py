@@ -69,17 +69,23 @@ class MoveToPath(ToolPathABC):
     def get_untransformed_points(self):
         return [self.point]
 
-class HolePath(ToolPathABC):
-    def __init__(self, bit, diameter, depth, direction = c.DIRECTION_CONVENTIONAL,
-                 offset_x = 0.0, offset_y = 0.0):
+class ExcavatedPath(ToolPathABC):
+    def __init__(self, bit, depth, direction = c.DIRECTION_CONVENTIONAL,
+                 offset_x = 0.0, offset_y = 0.0, rotation = 0.0, degrees = True):
         ToolPathABC.__init__(self)
         self.bit = bit
-        self.diameter = diameter
         self.depth = depth
         if direction == c.DIRECTION_CLIMB:
             self.add_transform(Mirror(c.AXIS_Y))
         if offset_x != 0.0 or offset_y != 0.0:
             self.add_transform(Shift2D(offset_x, offset_y))
+        if rotation != 0.0 or offset_y != 0.0:
+            self.add_transform(Rotate2D(rotation, degrees))
+
+class HolePath(ExcavatedPath):
+    def __init__(self, bit, diameter, depth, *args, **kwargs):
+        ExcavatedPath.__init__(self, bit, depth, *args, **kwargs)
+        self.diameter = diameter
 
     def get_untransformed_points(self):
         max_radius = max(0.0, self.diameter / 2.0 - self.bit.radius)
@@ -170,6 +176,72 @@ class HolePath(ToolPathABC):
         points.append([0,0,c.SAFE_HEIGHT])
         return points
 
+class SquareHolePath(ExcavatedPath):
+    def __init__(self, bit, depth, width_x, width_y, *args, **kwargs):
+        ExcavatedPath.__init__(self, bit, depth, *args, **kwargs)
+        self.diameter = width_x
+        self.width_x = width_x
+        self.width_y = width_y
+
+
+    def get_untransformed_points(self):
+        max_x = max(0.0, self.width_x / 2.0 - self.bit.radius)
+        min_x = -max_x
+        max_y = max(0.0, self.width_y / 2.0 - self.bit.radius)
+        min_y = -max_y
+        if max_x - min_x > 4.0*self.bit.radius:
+            raise ValueError('Square holes can only be drawn if the x size can be covered by two passes of the bit')
+
+        distance_x = max_x - min_x
+        distance_y = max_y - min_y
+        total_perimeter = 2 * (distance_x + distance_y)
+        partial_depths_per_step = [
+                # [x , y, normalized_depth]
+                [min_x,   0.0, (0.0*distance_x + 0.0*distance_y) / total_perimeter], # x_min, middle_y
+                [min_x, max_y, (0.0*distance_x + 0.5*distance_y) / total_perimeter], # x_min, y_max
+                [max_x, max_y, (1.0*distance_x + 0.5*distance_y) / total_perimeter], # x_max, y_max
+                [max_x, min_y, (1.0*distance_x + 1.5*distance_y) / total_perimeter], # x_max, y_min
+                [min_x, min_y, (2.0*distance_x + 1.5*distance_y) / total_perimeter], # x_min, y_min
+                # back to x_min, middle_y for next pass
+             ]
+
+        descent_radius = 0.5 * min(distance_x, distance_y)
+        full_circle_angles = np.linspace(0, 2*math.pi, 65, endpoint=True)
+        # descend such that we exit the plunge in the correct direction to start from
+        # the middle of x_min face
+        points = [[min_x, 0, c.SAFE_HEIGHT]]
+
+        # Cork screw down into the work piece in case the material does not start precisely at
+        # z = 0 and to prevent stopping on the material surface.
+        descent_heights = divide_into_equal_passes(c.SAFE_HEIGHT, 0.0, self.bit.pass_depth, include_first = True)
+        num_descent_steps = len(descent_heights)
+        for height_idx in range(1, num_descent_steps):
+            for theta in full_circle_angles:
+                height_scalar = math.sin(0.25 * theta)**2
+                this_height = height_scalar * descent_heights[height_idx] + (1.0-height_scalar) * descent_heights[height_idx-1]
+                points.append([min_x + descent_radius - descent_radius * math.cos(theta), descent_radius * math.sin(theta), this_height])
+
+        # Without ever clearing sawdust out, the hole would be cut in the following passes
+        depths = [0.0,] + divide_with_clearout_depths(self.depth, self.bit.pass_depth, self.bit.clearout_depth)
+        depths.append(depths[-1]) # Add the last depth on twice to do a full pass at a constant depth
+        print(depths)
+        for i in range(1, len(depths)):
+            last_depth = depths[i-1]
+            next_depth = depths[i]
+            for partial_depth in partial_depths_per_step:
+                points.append([partial_depth[0], partial_depth[1], -(last_depth + (next_depth-last_depth)*partial_depth[2])])
+        # Finish the last segment and then arc away from the wall to raise
+        points.append([min_x,   0.0, -depths[-1]])
+        for theta in full_circle_angles[0:len(full_circle_angles)//4]:
+            height_scalar = math.sin(theta)**2
+            this_height = height_scalar * c.SAFE_HEIGHT + (1.0-height_scalar) * (-depths[-1])
+            points.append([min_x + descent_radius - descent_radius * math.cos(theta), descent_radius * math.sin(theta), this_height])
+
+        # Make 100% sure the last point is at full height, it might not be depending on the rounding of the ascent profile
+        points.append([points[-1][0] ,points[-1][1], c.SAFE_HEIGHT])
+
+        return points
+
 class MultipleHolesPath(ToolPathABC):
     def __init__(self, hole_path, xy_locations = []):
         ToolPathABC.__init__(self)
@@ -193,8 +265,7 @@ class DatoPath(ToolPathABC):
         self.dato_width = dato_width
         self.board_width = board_width
         self.depth = depth
-        if direction == c.DIRECTION_CLIMB:
-            self.add_transform(Mirror(c.AXIS_Y))
+        self.direction = direction
         if offset_x != 0.0 or offset_y != 0.0:
             self.add_transform(Shift2D(offset_x, offset_y))
 
@@ -205,18 +276,27 @@ class DatoPath(ToolPathABC):
         max_x = -min_x
         min_y = -self.dato_width / 2.0 + self.bit.radius # inside slot size
         max_y = -min_y
-        points = [[min_x, min_y, c.SAFE_HEIGHT]]
+        points = [[min_x, 0, c.SAFE_HEIGHT]]
 
         depths = divide_with_clearout_depths(self.depth, self.bit.pass_depth, self.bit.clearout_depth)
+        previous_depth = 0.0
         for depth in depths:
             x_off = 0.0
-            for y in divide_into_equal_passes(max_y, self.bit.pass_horiz/2.0, self.bit.pass_horiz)[::-1]:
-                points.append([min_x - x_off, -y, -depth])
-                points.append([min_x - x_off,  y, -depth])
-                points.append([max_x + x_off,  y, -depth])
-                points.append([max_x + x_off, -y, -depth])
-                points.append([min_x - x_off, -y, -depth])
-                #x_off -= self.bit.pass_horiz
+            # The first cut is at full width of the bit, so it is done in two passes of half depth
+            for full_width_depth in [0.5 * (previous_depth + depth), depth]:
+                points.append([min_x - x_off, 0, -full_width_depth])
+                points.append([max_x + x_off, 0, -full_width_depth])
+                points.append([min_x - x_off, 0, -full_width_depth])
+            # Widen dato by pull material off either side depending on the direction of travel
+            dir_scalar = 1 if self.direction == c.DIRECTION_CONVENTIONAL else -1
+            for y in divide_into_equal_passes(0, max_y, self.bit.pass_horiz)[1:]:
+                points.append([min_x - x_off, -dir_scalar * y, -depth])
+                points.append([min_x - x_off,  dir_scalar * y, -depth])
+                points.append([max_x + x_off,  dir_scalar * y, -depth])
+                points.append([max_x + x_off, -dir_scalar * y, -depth])
+                points.append([min_x - x_off, -dir_scalar * y, -depth])
+                x_off -= 0.1 * self.bit.pass_horiz
+            previous_depth = depth
 
         points.append([points[-1][0] ,points[-1][1], c.SAFE_HEIGHT])
         return points
